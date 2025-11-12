@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { CloudWatchClient, GetMetricStatisticsCommand } from '@aws-sdk/client-cloudwatch';
+import {Injectable} from '@nestjs/common';
+import {CloudWatchClient, GetMetricStatisticsCommand} from '@aws-sdk/client-cloudwatch';
 import {
   CloudwatchMetricDiskMetricName,
   CloudwatchMetricMemoryMetricName,
@@ -9,8 +9,8 @@ import {
 
 @Injectable()
 export class CloudwatchService {
-  private initClient(args: { awsKey?: string; awsSecret?: string; region: string }) {
-    const { awsKey, awsSecret, region } = args;
+  private initClient(args: {awsKey?: string; awsSecret?: string; region: string}) {
+    const {awsKey, awsSecret, region} = args;
     let client: CloudWatchClient;
     if (awsKey && awsSecret) {
       client = new CloudWatchClient({
@@ -38,7 +38,7 @@ export class CloudwatchService {
     period: number;
     statistics: CloudwatchMetricStatistics;
   }) {
-    const { awsKey, awsSecret, region, instanceId, startTime, endTime, period, statistics } = args;
+    const {awsKey, awsSecret, region, instanceId, startTime, endTime, period, statistics} = args;
     const client = this.initClient({
       awsKey,
       awsSecret,
@@ -73,7 +73,7 @@ export class CloudwatchService {
     statistics: CloudwatchMetricStatistics;
     unit: CloudwatchMetricUnit;
   }) {
-    const { awsKey, awsSecret, metricName, region, instanceId, startTime, endTime, period, statistics, unit } = args;
+    const {awsKey, awsSecret, metricName, region, instanceId, startTime, endTime, period, statistics, unit} = args;
     const client = this.initClient({
       awsKey,
       awsSecret,
@@ -108,7 +108,7 @@ export class CloudwatchService {
     period: number;
     statistics: CloudwatchMetricStatistics;
   }) {
-    const { awsKey, awsSecret, metricName, region, instanceId, startTime, endTime, period, statistics } = args;
+    const {awsKey, awsSecret, metricName, region, instanceId, startTime, endTime, period, statistics} = args;
     const client = this.initClient({
       awsKey,
       awsSecret,

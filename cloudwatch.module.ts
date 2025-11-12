@@ -1,5 +1,5 @@
-import { Global, Module } from '@nestjs/common';
-import { CloudwatchService } from '@microservices/cloudwatch/cloudwatch.service';
+import {Global, Module} from '@nestjs/common';
+import {CloudwatchService} from '@microservices/cloudwatch/cloudwatch.service';
 
 @Global()
 @Module({

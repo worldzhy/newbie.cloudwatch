@@ -1,8 +1,8 @@
 import {Injectable} from '@nestjs/common';
-import {CloudWatchClient, GetMetricDataCommand, GetMetricStatisticsCommand} from '@aws-sdk/client-cloudwatch';
+import {CloudWatchClient, GetMetricDataCommand} from '@aws-sdk/client-cloudwatch';
 import {CloudwatchMetricRDSMetricName, CloudwatchMetricStatistics} from '@microservices/cloudwatch/cloudwatch.enum';
 import {DescribeInstancesCommand, EC2Client} from '@aws-sdk/client-ec2';
-import {RDSClient} from '@aws-sdk/client-rds';
+import {DescribeDBInstancesCommand, RDSClient} from '@aws-sdk/client-rds';
 import {isArray} from 'class-validator';
 
 @Injectable()
@@ -135,7 +135,8 @@ export class CloudwatchService {
     return null;
   }
 
-  async getRDSMetric(args: {
+  async getRDSInstancesMetric(args: {
+    rdsInstanceIds?: string[];
     awsKey?: string;
     awsSecret?: string;
     metricName: CloudwatchMetricRDSMetricName;
@@ -146,26 +147,52 @@ export class CloudwatchService {
     period: number;
     statistics: CloudwatchMetricStatistics;
   }) {
-    const {awsKey, awsSecret, metricName, region, instanceId, startTime, endTime, period, statistics} = args;
-    const client = this.initCloudwatchClient({
+    const {rdsInstanceIds, awsKey, awsSecret, metricName, region, instanceId, startTime, endTime, period, statistics} =
+      args;
+    const rdsClient = this.initEC2Client({
       awsKey,
       awsSecret,
       region,
     });
-    const command = new GetMetricStatisticsCommand({
-      Namespace: 'AWS/RDS',
-      MetricName: metricName,
-      Dimensions: [
-        {
-          Name: 'DBInstanceIdentifier',
-          Value: instanceId,
+    const cloudwatchClient = this.initCloudwatchClient({
+      awsKey,
+      awsSecret,
+      region,
+    });
+    let ids: string[] = [];
+    if (!isArray(rdsInstanceIds) || rdsInstanceIds.length === 0) {
+      // List all rds instances.
+      const listCommand = new DescribeDBInstancesCommand({
+        MaxRecords: 100,
+      });
+      const rdsResponse = await rdsClient.send(listCommand);
+      if (rdsResponse.DBInstances) {
+        for (const inst of rdsResponse.DBInstances) {
+          if (inst.DBInstanceIdentifier) {
+            ids.push(inst.DBInstanceIdentifier);
+          }
+        }
+      }
+    } else {
+      ids = [...rdsInstanceIds];
+    }
+    const queries = ids.map((id, index) => ({
+      Id: `q${index}`, // 每个查询要有唯一 Id
+      MetricStat: {
+        Metric: {
+          Namespace: 'AWS/RDS',
+          MetricName: metricName,
+          Dimensions: [{Name: 'DBInstanceIdentifier', Value: id}],
         },
-      ],
+        Period: period,
+        Stat: statistics,
+      },
+    }));
+    const command = new GetMetricDataCommand({
       StartTime: startTime,
       EndTime: endTime,
-      Period: period,
-      Statistics: [statistics],
+      MetricDataQueries: queries,
     });
-    return await client.send(command);
+    return await cloudwatchClient.send(command);
   }
 }
